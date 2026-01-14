@@ -7,6 +7,8 @@ COPY HytaleServer.aot .
 
 RUN mkdir -p /data
 
+WORKDIR /data
+
 ENV ASSETS_PATH="/assets/Assets.zip" \
     JAVA_OPTS="" \
     HYTALE_OPTS=""
