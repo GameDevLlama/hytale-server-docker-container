@@ -9,7 +9,9 @@ services:
       - "5520:5520/udp"
     volumes:
       - /docker/storage/hytale/data:/data
-      - /docker/storage/hytale/assets/Assets.zip:/assets/Assets.zip:ro
+      - /docker/storage/hytale/assets:/assets
     environment:
       JAVA_OPTS: "-Dio.netty.transport.noNative=true"
       HYTALE_OPTS: ""
+      ASSETS_AUTO_UPDATE: "false"
+      # ASSETS_PATCHLINE: "pre-release"
