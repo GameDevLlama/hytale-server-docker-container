@@ -1,10 +1,17 @@
 #!/bin/sh
 set -e
+echo "Entrypoint starting..."
 
 ASSETS_DIR="${ASSETS_DIR:-$(dirname "$ASSETS_PATH")}"
 HYTALE_DOWNLOADER_PATH="${HYTALE_DOWNLOADER_PATH:-/opt/hytale/hytale-downloader}"
 ASSETS_VERSION_FILE="${ASSETS_VERSION_FILE:-$ASSETS_DIR/assets.version}"
 export ASSETS_DIR ASSETS_PATH
+
+ASSETS_AUTO_UPDATE="${ASSETS_AUTO_UPDATE:-$AUTO_UPDATE}"
+ASSETS_AUTO_UPDATE="$(printf "%s" "$ASSETS_AUTO_UPDATE" | tr '[:upper:]' '[:lower:]')"
+echo "ASSETS_AUTO_UPDATE=${ASSETS_AUTO_UPDATE}"
+echo "ASSETS_PATH=${ASSETS_PATH}"
+echo "ASSETS_DIR=${ASSETS_DIR}"
 
 PATCHLINE_ARGS=""
 if [ -n "$ASSETS_PATCHLINE" ]; then
@@ -19,9 +26,14 @@ if [ "$ASSETS_AUTO_UPDATE" = "true" ]; then
   fi
 
   mkdir -p "$ASSETS_DIR"
-  latest_version="$("$HYTALE_DOWNLOADER_PATH" -print-version $PATCHLINE_ARGS)"
+  echo "Checking latest assets version..."
+  tmp_log="/tmp/hytale-downloader.version.log"
+  : > "$tmp_log"
+  "$HYTALE_DOWNLOADER_PATH" -print-version $PATCHLINE_ARGS 2>&1 | tee -a "$tmp_log"
+  latest_version="$(tail -n 1 "$tmp_log" | tr -d '\r\n')"
   if [ -z "$latest_version" ]; then
     echo "ERROR: Failed to detect latest asset version."
+    echo "If this is the first run, authenticate via the device login shown above."
     exit 1
   fi
 
