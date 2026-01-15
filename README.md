@@ -35,9 +35,11 @@ https://support.hytale.com/hc/en-us/articles/45326769420827-Hytale-Server-Manual
 You must provide `Assets.zip`. You can either:
 
 - download it manually and mount it into the container, or
-- set `ASSETS_AUTO_UPDATE=true` and provide the `hytale-downloader` binary.
+- set `ASSETS_AUTO_UPDATE=true` to download the game package automatically.
 
-For auto-updates, the downloader is bundled in the image at `/opt/hytale/hytale-downloader`.
+When auto-update is enabled, the container downloads the official game package,
+extracts `Assets.zip`, and writes the server binaries to `/assets/server`.
+The downloader is bundled in the image at `/opt/hytale/hytale-downloader`.
 If the download URL changes, rebuild with `--build-arg HYTALE_DOWNLOADER_URL=...`.
 
 Example host structure:
@@ -136,10 +138,13 @@ CTRL + P, CTRL + Q
 |--------|-------------|
 | `ASSETS_PATH` | Path to `Assets.zip` inside container |
 | `ASSETS_DIR` | Directory where assets are stored |
-| `ASSETS_AUTO_UPDATE` | Set to `true` to check/download assets on startup |
+| `ASSETS_AUTO_UPDATE` | Set to `true` to download/extract assets and server files on startup |
 | `ASSETS_PATCHLINE` | Optional patchline (e.g. `pre-release`) |
 | `ASSETS_VERSION_FILE` | File storing the last downloaded asset version |
 | `HYTALE_DOWNLOADER_PATH` | Path to `hytale-downloader` binary |
+| `SERVER_DIR` | Directory for downloaded server binaries |
+| `SERVER_JAR` | Path to `HytaleServer.jar` |
+| `SERVER_AOT` | Path to `HytaleServer.aot` |
 | `JAVA_OPTS` | Additional JVM options |
 | `HYTALE_OPTS` | Additional Hytale server arguments |
 

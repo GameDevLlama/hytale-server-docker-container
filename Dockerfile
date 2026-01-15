@@ -12,7 +12,6 @@ RUN microdnf install -y curl unzip \
     && mv /opt/hytale/hytale-downloader-linux-amd64 /opt/hytale/hytale-downloader \
     && chmod +x /opt/hytale/hytale-downloader \
     && rm -f /tmp/hytale-downloader.zip \
-    && microdnf remove -y unzip \
     && microdnf clean all
 
 RUN mkdir -p /data
@@ -25,6 +24,9 @@ ENV ASSETS_PATH="/assets/Assets.zip" \
     ASSETS_PATCHLINE="" \
     ASSETS_VERSION_FILE="/assets/assets.version" \
     HYTALE_DOWNLOADER_PATH="/opt/hytale/hytale-downloader" \
+    SERVER_DIR="/assets/server" \
+    SERVER_JAR="/assets/server/HytaleServer.jar" \
+    SERVER_AOT="/assets/server/HytaleServer.aot" \
     JAVA_OPTS="" \
     HYTALE_OPTS=""
 

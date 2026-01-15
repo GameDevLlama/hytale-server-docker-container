@@ -5,6 +5,11 @@ echo "Entrypoint starting..."
 ASSETS_DIR="${ASSETS_DIR:-$(dirname "$ASSETS_PATH")}"
 HYTALE_DOWNLOADER_PATH="${HYTALE_DOWNLOADER_PATH:-/opt/hytale/hytale-downloader}"
 ASSETS_VERSION_FILE="${ASSETS_VERSION_FILE:-$ASSETS_DIR/assets.version}"
+SERVER_DIR="${SERVER_DIR:-$ASSETS_DIR/server}"
+SERVER_JAR="${SERVER_JAR:-$SERVER_DIR/HytaleServer.jar}"
+SERVER_AOT="${SERVER_AOT:-$SERVER_DIR/HytaleServer.aot}"
+FALLBACK_SERVER_JAR="/opt/hytale/HytaleServer.jar"
+FALLBACK_SERVER_AOT="/opt/hytale/HytaleServer.aot"
 export ASSETS_DIR ASSETS_PATH
 
 ASSETS_AUTO_UPDATE="${ASSETS_AUTO_UPDATE:-$AUTO_UPDATE}"
@@ -25,8 +30,8 @@ if [ "$ASSETS_AUTO_UPDATE" = "true" ]; then
     exit 1
   fi
 
-  mkdir -p "$ASSETS_DIR"
-  echo "Checking latest assets version..."
+  mkdir -p "$ASSETS_DIR" "$SERVER_DIR"
+  echo "Checking latest game version..."
   tmp_log="/tmp/hytale-downloader.version.log"
   : > "$tmp_log"
   "$HYTALE_DOWNLOADER_PATH" -print-version $PATCHLINE_ARGS 2>&1 | tee -a "$tmp_log"
@@ -43,12 +48,33 @@ if [ "$ASSETS_AUTO_UPDATE" = "true" ]; then
   fi
 
   if [ ! -f "$ASSETS_PATH" ] || [ "$latest_version" != "$current_version" ]; then
-    echo "Downloading assets version $latest_version..."
-    "$HYTALE_DOWNLOADER_PATH" -download-path "$ASSETS_PATH" $PATCHLINE_ARGS
-    if [ ! -f "$ASSETS_PATH" ]; then
-      echo "ERROR: Assets.zip missing after download."
+    if ! command -v unzip >/dev/null 2>&1; then
+      echo "ERROR: unzip is required to extract Assets.zip and server files."
       exit 1
     fi
+
+    tmp_zip="/tmp/hytale-game.zip"
+    rm -f "$tmp_zip"
+
+    echo "Downloading game package version $latest_version..."
+    "$HYTALE_DOWNLOADER_PATH" -download-path "$tmp_zip" $PATCHLINE_ARGS
+    if [ ! -f "$tmp_zip" ]; then
+      echo "ERROR: Game package missing after download."
+      exit 1
+    fi
+
+    echo "Extracting Assets.zip..."
+    unzip -o -j "$tmp_zip" "Assets.zip" -d "$ASSETS_DIR"
+    if [ ! -f "$ASSETS_PATH" ]; then
+      echo "ERROR: Assets.zip missing after extraction."
+      exit 1
+    fi
+
+    echo "Extracting server binaries..."
+    unzip -o -j "$tmp_zip" "Server/HytaleServer.jar" -d "$SERVER_DIR"
+    unzip -o -j "$tmp_zip" "Server/HytaleServer.aot" -d "$SERVER_DIR"
+
+    rm -f "$tmp_zip"
     printf "%s\n" "$latest_version" > "$ASSETS_VERSION_FILE"
   else
     echo "Assets already up to date ($current_version)."
@@ -61,8 +87,23 @@ else
   fi
 fi
 
+if [ ! -f "$SERVER_JAR" ]; then
+  SERVER_JAR="$FALLBACK_SERVER_JAR"
+  SERVER_AOT="$FALLBACK_SERVER_AOT"
+fi
+
+if [ ! -f "$SERVER_JAR" ]; then
+  echo "ERROR: HytaleServer.jar not found."
+  exit 1
+fi
+
+AOT_ARG=""
+if [ -f "$SERVER_AOT" ]; then
+  AOT_ARG="-XX:AOTCache=$SERVER_AOT"
+fi
+
 exec java $JAVA_OPTS \
-  -XX:AOTCache=/opt/hytale/HytaleServer.aot \
-  -jar /opt/hytale/HytaleServer.jar \
+  $AOT_ARG \
+  -jar "$SERVER_JAR" \
   --assets "$ASSETS_PATH" \
   $HYTALE_OPTS
